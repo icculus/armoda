@@ -47,15 +47,15 @@ int ARM_MOD_InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t a
 	break;
     case 1:
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_period_slide_callbacks);
-	note->cmd.arg1 = -((int)argx*16+argy)*4;
+	note->cmd.arg1 = -((int)argx*16+argy) * 4;
 	break;
     case 2:
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_period_slide_callbacks);
-	note->cmd.arg1 = ((int)argx*16+argy)*4;
+	note->cmd.arg1 = ((int)argx*16+argy) * 4;
 	break;
     case 3:
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_slide_to_note_callbacks);
-	note->cmd.arg1 = ((int)argx*16+argy)*4;
+	note->cmd.arg1 = ((int)argx*16+argy) * 4;
 	note->cmd.arg2 = note->note;
 	note->trigger = 0;
 	break;
@@ -82,7 +82,7 @@ int ARM_MOD_InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t a
     case 7:
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_tremolo_callbacks);
 	note->cmd.arg1 = argx;
-	note->cmd.arg2 = (int)argy*4;
+	note->cmd.arg2 = (int)argy;
 	break;
     case 8:
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_null_callbacks);
@@ -160,8 +160,10 @@ int ARM_MOD_InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t a
 	    note->cmd.arg1 = argy;
 	    break;
 	case 13:
+/*
 	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks);
 	    note->cmd.arg1 = argy;
+*/
 	    break;
 	case 14:
 	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_pattern_callbacks);

@@ -113,7 +113,7 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
     case 'R':
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_tremolo_callbacks);
 	note->cmd.arg1 = argx;
-	note->cmd.arg2 = (int)argy * 4;
+	note->cmd.arg2 = (int)argy;
 	break;
 
     case 'S':
@@ -158,8 +158,10 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	    note->cmd.arg1 = argy;
 	    break;
 	case 0xD:
+/*
 	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks);
 	    note->cmd.arg1 = argy;
+*/
 	    break;
 	case 0xE:
 	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_pattern_callbacks);
