@@ -11,6 +11,8 @@
 void command_s3m_volslide_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
     int amt;
+    ARM_CommandType* callbacks = &command_null_callbacks;
+
     if (arg1 == 0 && arg2 == 0) {
 	arg1 = CHAN.volslide_state.last_valid_type_arg;
 	arg2 = CHAN.volslide_state.last_valid_direction_arg;
@@ -18,23 +20,26 @@ void command_s3m_volslide_init(struct ARM_Tracker* player, int c, int arg1, int 
     CHAN.volslide_state.last_valid_type_arg = arg1;
     CHAN.volslide_state.last_valid_direction_arg = arg2;
     if (arg2 == 0x0F) {
-	CHAN.command.callbacks = &command_mod_fine_volslide_callbacks;
+	callbacks = &command_mod_fine_volslide_callbacks;
 	amt = arg1;
     } else if (arg1 == 0x0F) {
-	CHAN.command.callbacks = &command_mod_fine_volslide_callbacks;
+	callbacks = &command_mod_fine_volslide_callbacks;
 	amt = -arg2;
     } else if (arg2 == 0) {
-	CHAN.command.callbacks = &command_mod_volslide_callbacks;
+	callbacks = &command_mod_volslide_callbacks;
 	amt = arg1;
     } else if (arg1 == 0) {
-	CHAN.command.callbacks = &command_mod_volslide_callbacks;
+	callbacks = &command_mod_volslide_callbacks;
 	amt = -arg2;
     } else {
-	CHAN.command.callbacks = &command_null_callbacks;
+	callbacks = &command_null_callbacks;
 	amt = 0;
     }
-    if (CHAN.command.callbacks->init_proc != NULL)
-	CHAN.command.callbacks->init_proc(player, c, amt, 0);
+    
+    CHAN.command.cmd = ARM_GetNumForCallbacks(callbacks);
+
+    if (callbacks->init_proc != NULL)
+	callbacks->init_proc(player, c, amt, 0);
 }
 
 ARM_CommandType command_s3m_volslide_callbacks = { command_s3m_volslide_init, NULL, NULL, NULL, 0 };
@@ -43,6 +48,7 @@ ARM_CommandType command_s3m_volslide_callbacks = { command_s3m_volslide_init, NU
 void command_s3m_period_slide_up_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
     int amt;
+    ARM_CommandType* callbacks = &command_null_callbacks;
 
     if (arg1 == 0 && arg2 == 0) {
 	arg1 = CHAN.periodslide_state.last_valid_delta_arg;
@@ -52,16 +58,18 @@ void command_s3m_period_slide_up_init(struct ARM_Tracker* player, int c, int arg
     CHAN.periodslide_state.last_valid_delta_arg = arg1;
     CHAN.periodslide_state.last_valid_limit_arg = arg2;
     if (arg1 == 0x0F) {
-	CHAN.command.callbacks = &command_mod_fine_period_slide_callbacks;
+	callbacks = &command_mod_fine_period_slide_callbacks;
 	amt = arg2 * 4;
     } else if (arg1 == 0x0E) {
-	CHAN.command.callbacks = &command_mod_fine_period_slide_callbacks;
+	callbacks = &command_mod_fine_period_slide_callbacks;
 	amt = arg2;
     } else {
-	CHAN.command.callbacks = &command_mod_period_slide_callbacks;
+	callbacks = &command_mod_period_slide_callbacks;
 	amt = arg2 * 4;
     }
-    CHAN.command.callbacks->init_proc(player, c, -amt, 0);
+    CHAN.command.cmd = ARM_GetNumForCallbacks(callbacks);
+    if (callbacks->init_proc != NULL)
+	callbacks->init_proc(player, c, -amt, 0);
 }
 
 ARM_CommandType command_s3m_period_slide_up_callbacks = { command_s3m_period_slide_up_init, NULL, NULL, NULL, 0 };
@@ -70,6 +78,7 @@ ARM_CommandType command_s3m_period_slide_up_callbacks = { command_s3m_period_sli
 void command_s3m_period_slide_down_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
     int amt;
+    ARM_CommandType* callbacks = &command_null_callbacks;
 
     if (arg1 == 0 && arg2 == 0) {
 	arg1 = CHAN.periodslide_state.last_valid_delta_arg;
@@ -79,16 +88,18 @@ void command_s3m_period_slide_down_init(struct ARM_Tracker* player, int c, int a
     CHAN.periodslide_state.last_valid_delta_arg = arg1;
     CHAN.periodslide_state.last_valid_limit_arg = arg2;
     if (arg1 == 0x0F) {
-	CHAN.command.callbacks = &command_mod_fine_period_slide_callbacks;
+	callbacks = &command_mod_fine_period_slide_callbacks;
 	amt = arg2 * 4;
     } else if (arg1 == 0x0E) {
-	CHAN.command.callbacks = &command_mod_fine_period_slide_callbacks;
+	callbacks = &command_mod_fine_period_slide_callbacks;
 	amt = arg2;
     } else {
-	CHAN.command.callbacks = &command_mod_period_slide_callbacks;
+	callbacks = &command_mod_period_slide_callbacks;
 	amt = arg2 * 4;
     }
-    CHAN.command.callbacks->init_proc(player, c, amt, 0);
+    CHAN.command.cmd = ARM_GetNumForCallbacks(callbacks);
+    if (callbacks->init_proc != NULL)
+	callbacks->init_proc(player, c, amt, 0);
 }
 
 
@@ -97,7 +108,7 @@ ARM_CommandType command_s3m_period_slide_down_callbacks = { command_s3m_period_s
 
 void command_s3m_vibrato_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
-    CHAN.command.callbacks = &command_mod_vibrato_callbacks;
+    CHAN.command.cmd = ARM_GetNumForCallbacks(&command_mod_vibrato_callbacks);
     command_mod_vibrato_callbacks.init_proc(player, c, arg1, arg2);
     CHAN.vibrato_state.retrig = 0;
 }
@@ -176,7 +187,7 @@ ARM_CommandType command_s3m_retrig_and_volslide_callbacks = { command_s3m_retrig
 
 void command_s3m_tremolo_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
-    CHAN.command.callbacks = &command_mod_tremolo_callbacks;
+    CHAN.command.cmd = ARM_GetNumForCallbacks(&command_mod_tremolo_callbacks);
     command_mod_tremolo_init(player, c, arg1, arg2);
     CHAN.tremolo_state.retrig = 0;
 }

@@ -289,7 +289,7 @@ ARM_CommandType command_mod_tremolo_callbacks = { command_mod_tremolo_init, NULL
 void command_mod_offset_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
     CHAN.command_name = "sample offset";
-    if (CHAN.sample != NULL) {
+    if (CHAN.sample != -1) {
 	player->mixer->SetVoicePos(player->mixer,
 				   CHAN.voice,
 				   arg1);

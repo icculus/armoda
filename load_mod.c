@@ -26,12 +26,12 @@ int ARM_ConvertFinetuneToC4SPD(int finetune)
     return ftab[finetune + 8];
 }
 
-static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t argy)
+int ARM_MOD_InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t argy)
 {
     uint8_t argz;
 
     memset(&note->cmd, 0, sizeof(ARM_Command));
-    note->cmd.callbacks = &command_null_callbacks;
+    note->cmd.cmd = 0;
 
     argz = ((argx & 0x0F) << 4) + (argy & 0x0F);
 
@@ -41,31 +41,31 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	    /* Null effect. */
 	    break;
 	}
-	note->cmd.callbacks = &command_mod_arpeggio_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_arpeggio_callbacks);
 	note->cmd.arg1 = (int)argx;
 	note->cmd.arg2 = (int)argy;
 	break;
     case 1:
-	note->cmd.callbacks = &command_mod_period_slide_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_period_slide_callbacks);
 	note->cmd.arg1 = -((int)argx*16+argy)*4;
 	break;
     case 2:
-	note->cmd.callbacks = &command_mod_period_slide_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_period_slide_callbacks);
 	note->cmd.arg1 = ((int)argx*16+argy)*4;
 	break;
     case 3:
-	note->cmd.callbacks = &command_mod_slide_to_note_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_slide_to_note_callbacks);
 	note->cmd.arg1 = ((int)argx*16+argy)*4;
 	note->cmd.arg2 = (int)note->period;
 	note->trigger = 0;
 	break;
     case 4:
-	note->cmd.callbacks = &command_mod_vibrato_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_vibrato_callbacks);
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = (int)argy * 4;
 	break;
     case 5:
-	note->cmd.callbacks = &command_mod_period_and_volslide_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_period_and_volslide_callbacks);
 	if (argx != 0)
 	    note->cmd.arg1 = argx;
 	else
@@ -73,43 +73,43 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	note->trigger = 0;
 	break;
     case 6:
-	note->cmd.callbacks = &command_mod_volslide_and_vibrato_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_volslide_and_vibrato_callbacks);
 	if (argx != 0)
 	    note->cmd.arg1 = argx;
 	else
 	    note->cmd.arg1 = -(int)argy;
 	break;
     case 7:
-	note->cmd.callbacks = &command_mod_tremolo_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_tremolo_callbacks);
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = (int)argy*4;
 	break;
     case 8:
-	note->cmd.callbacks = &command_null_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_null_callbacks);
 	break;
     case 9:
-	note->cmd.callbacks = &command_mod_offset_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_offset_callbacks);
 	note->cmd.arg1 = (uint32_t)argx * 4096 + argy * 256;
 	break;
     case 10:
-	note->cmd.callbacks = &command_mod_volslide_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_volslide_callbacks);
 	if (argx != 0)
 	    note->cmd.arg1 = argx;
 	else
 	    note->cmd.arg1 = -(int)argy;
 	break;
     case 11:
-	note->cmd.callbacks = &command_mod_goto_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_goto_callbacks);
 	note->cmd.arg1 = argz;
 	note->cmd.arg2 = -1;
 	break;
     case 12:
-	note->cmd.callbacks = &command_mod_set_volume_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_volume_callbacks);
 	note->cmd.arg1 = argz;
 	if (note->cmd.arg1 > 64) note->cmd.arg1 = 64;
 	break;
     case 13:
-	note->cmd.callbacks = &command_mod_goto_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_goto_callbacks);
 	note->cmd.arg1 = -1;
 	note->cmd.arg2 = argx * 10 + argy;
 	break;
@@ -119,52 +119,53 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	    /* Maybe at some point we can implement filter control of some sort. */
 	    break;
 	case 1:
-	    note->cmd.callbacks = &command_mod_fine_period_slide_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_fine_period_slide_callbacks);
 	    note->cmd.arg1 = -(int)argy*4;
 	    break;
 	case 2:
-	    note->cmd.callbacks = &command_mod_fine_period_slide_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_fine_period_slide_callbacks);
 	    note->cmd.arg1 = (int)argy*4;
 	    break;
 	case 5:
-	    note->cmd.callbacks = &command_mod_set_c4spd_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_c4spd_callbacks);
 	    if (argy & 8) argy |= 0xF0;
 	    note->cmd.arg1 = ARM_ConvertFinetuneToC4SPD(argy);
 	    break;
 	case 6:
 	    if (argy == 0) {
-		note->cmd.callbacks = &command_mod_set_pattern_loop_callbacks;
+		note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_pattern_loop_callbacks);
 	    } else {
-		note->cmd.callbacks = &command_mod_do_pattern_loop_callbacks;
+		note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_do_pattern_loop_callbacks);
+		note->cmd.arg1 = argy;
 	    }
 	    break;
 	case 8:
-	    note->cmd.callbacks = &command_mod_set_channel_pan_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_channel_pan_callbacks);
 	    note->cmd.arg1 = ((int)argy * 255 / 15);
 	    break;
 	case 9:
-	    note->cmd.callbacks = &command_mod_retrigger_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_retrigger_callbacks);
 	    note->cmd.arg1 = argy;
 	    break;
 	case 10:
-	    note->cmd.callbacks = &command_mod_fine_volslide_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_fine_volslide_callbacks);
 	    note->cmd.arg1 = argy;
 	    break;
 	case 11:
-	    note->cmd.callbacks = &command_mod_fine_volslide_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_fine_volslide_callbacks);
 	    note->cmd.arg1 = -(int)argy;
 	    break;
 	case 12:
-	    note->cmd.callbacks = &command_mod_cut_channel_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_cut_channel_callbacks);
 	    note->cmd.arg1 = argy;
 	    break;
 	case 13:
-//	    note->cmd.callbacks = &command_mod_delay_trigger_callbacks;
+//	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks);
 //	    note->cmd.arg1 = argy;
-	    printf("FIXME! Delay trigger command ignored due to lack of sleep during implementation.");
+//	    printf("FIXME! Delay trigger command ignored due to lack of sleep during implementation.\n");
 	    break;
 	case 14:
-	    note->cmd.callbacks = &command_mod_delay_pattern_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_pattern_callbacks);
 	    note->cmd.arg1 = argy;
 	    break;			    
 	default:
@@ -175,10 +176,10 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	if (argz == 0)
 	    argz = 1;
 	if (argz <= 32) {
-	    note->cmd.callbacks = &command_mod_set_speed_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_speed_callbacks);
 	    note->cmd.arg1 = argz;
 	} else {
-	    note->cmd.callbacks = &command_mod_set_tempo_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_tempo_callbacks);
 	    note->cmd.arg1 = argz;
 	}
 	break;
@@ -267,7 +268,9 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
 	mod->num_channels = 4;
     } else if (!strcmp(sig, "6CHN") || !strcmp(sig, "FLT6")) {
 	mod->num_channels = 6;
-    } else if (!strcmp(sig, "8CHN") || !strcmp(sig, "FLT8")) {
+    } else if (!strcmp(sig, "8CHN")) {
+	/* We don't support the FLT8 format (StarTrekker). It achieves 8 channels
+	   by pairing patterns side by side. */
 	mod->num_channels = 8;
     } else {
 	printf("Unknown MOD format. Signature was '%s'.", sig);
@@ -308,11 +311,8 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
 
 		if (fread(raw_note, 4, 1, f) != 1) goto failure;
 		sample_num = (raw_note[0] & 0xF0) + ((raw_note[2] >> 4) & 0x0F);
-		if (sample_num >= 1) {
-		    CLAMP(sample_num, 1, mod->num_samples);
-		    note->sample = &mod->samples[sample_num-1];
-		} else
-		    note->sample = NULL;
+		CLAMP(sample_num, 0, mod->num_samples);
+		note->sample = sample_num - 1;
 		note->period = raw_note[1] + ((raw_note[0] & 0x0F) * 256);
 		note->period *= 4;
 		if (note->period != 0)
@@ -328,7 +328,7 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
 		command = (raw_cmd & 0x0F00) >> 8;
 		argx = (raw_cmd & 0x00F0) >> 4;
 		argy = (raw_cmd & 0x000F);
-	        InstallCommand(note, command, argx, argy);
+	        ARM_MOD_InstallCommand(note, command, argx, argy);
 
 	    }
 	}
@@ -360,32 +360,4 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
     if (f != NULL) fclose(f);
     ARM_FreeModuleData(mod);
     return -1;
-}
-
-
-/* CLEANUP: move this to a better place */
-void ARM_FreeSample(ARM_Sample* sam)
-{
-    free(sam->name);
-    free(sam->data);
-}
-
-
-/* CLEANUP: move this to a better place */
-void ARM_FreeModuleData(ARM_Module* mod)
-{
-    int i;
-
-    free(mod->title);
-    for (i = 0; i < mod->num_samples; i++) {
-	ARM_FreeSample(&mod->samples[i]);
-    }
-    free(mod->samples);
-    free(mod->order);
-    for (i = 0; i < mod->num_patterns; i++) {
-	ARM_FreePatternData(&mod->patterns[i]);
-    }
-    free(mod->patterns);
-    free(mod->default_pan);
-    memset(mod, 0, sizeof (ARM_Module));
 }

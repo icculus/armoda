@@ -45,15 +45,19 @@ int main(int argc, char *argv[])
     int silence = 0;
     int show_song_info = 0;
     int show_sample_info = 0;
+    int force_master_volume = -1;
+    int force_global_volume = -1;
+    int verbose = 0;
     int arg;
 
     if (argc < 2) {
-	printf("You must supply a filename.\n");
+	printf("You must supply at least one filename.\n");
 	return 1;
     }
 
     signal(SIGINT, SignalHandler);
 
+    /* CLEANUP: better argument processing system */
     for (arg = 1; arg < argc-1; arg++) {
 	if (!strcmp(argv[arg], "--order")) {
 	    startord = atoi(argv[arg+1]);
@@ -71,6 +75,17 @@ int main(int argc, char *argv[])
 	    show_song_info = 1;
 	} else if (!strcmp(argv[arg], "--sampleinfo")) {
 	    show_sample_info = 1;
+	} else if (!strcmp(argv[arg], "--info")) {
+	    show_song_info = 1;
+	    show_sample_info = 1;
+	} else if (!strcmp(argv[arg], "--force-master")) {
+	    force_master_volume = atoi(argv[arg+1]);
+	    arg++;
+	} else if (!strcmp(argv[arg], "--force-global")) {
+	    force_global_volume = atoi(argv[arg+1]);
+	    arg++;
+	} else if (!strcmp(argv[arg], "--verbose")) {
+	    verbose = 1;
 	} else break;
     }
 
@@ -91,28 +106,17 @@ int main(int argc, char *argv[])
 
 	char *ext;
 
-	if (strlen(argv[arg]) < 3) {
-	    printf("Bad filename %s\n", argv[arg]);
+	if (ARM_LoadModule(&mod, argv[arg]) < 0) {
+	    printf("Error loading module '%s'.\n", argv[arg]);
 	    continue;
 	}
 
-	ext = argv[arg] + strlen(argv[arg]) - 3;
-
- 	if (!strcasecmp(ext, "s3m")) {
-  	    if (ARM_LoadModule_S3M(&mod, argv[arg]) < 0) {
-  		printf("Unable to load Scream Tracker module %s\n", argv[arg]);
-  		continue;
-  	    }
-	} else if (!strcasecmp(ext, "mod")) {
-	    if (ARM_LoadModule_MOD(&mod, argv[arg]) < 0) {
-		printf("Unable to load Protracker module '%s'.\n", argv[arg]);
-		continue;
-	    }
-	} else {
-	    printf("Unknown file extension '%s'.\n", ext);
-	}
-
 	ARM_InitTracker(&player, &mod, mixer, RATE);
+
+	if (force_master_volume >= 0)
+	    mod.master_volume = force_master_volume;
+	if (force_global_volume >= 0)
+	    mod.global_volume = force_global_volume;
 
 	if (show_song_info) {
 	    printf("+- Module info: %s\n", argv[arg]);
@@ -154,7 +158,6 @@ int main(int argc, char *argv[])
 	MXR_BeginSDLOutput();
 
 	while (!player.done) {
-	    int i, c;
 
 	    ARM_RenderOneTick(&player, (float)player.num_channels);
 	    ARM_AdvancePosition(&player);

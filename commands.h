@@ -18,7 +18,7 @@ typedef struct ARM_CommandType {
 } ARM_CommandType;
 
 typedef struct ARM_Command {
-    ARM_CommandType* callbacks;
+    int cmd;          /* map to callbacks with ARM_GetCallbacksForNum */
     int arg1, arg2;
 } ARM_Command;
 
@@ -72,5 +72,12 @@ typedef struct ARM_MOD_TremorState {
 } ARM_MOD_TremorState;
 
 extern ARM_CommandType command_null_callbacks;
+
+
+ARM_CommandType* ARM_GetCallbacksForNum(unsigned int cmd);
+/* Maps an integer to a command callback structure. */
+
+unsigned int ARM_GetNumForCallbacks(ARM_CommandType* callbacks);
+/* Maps a callback structure pointer to a command number. */
 
 #endif

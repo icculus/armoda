@@ -52,20 +52,24 @@ float ARM_CalcSemitones(float period, float semitones)
     return period * pow(2.0, ((float)semitones/-12.0));
 }
 
-void ARM_TriggerChannel(ARM_Tracker* player, int c, ARM_Sample* sample, float period, float volume)
+void ARM_TriggerChannel(ARM_Tracker* player, int c, int sample, float period, float volume)
 {
+    ARM_Sample *sample_ptr;
+
+    if (sample == -1 || sample >= player->mod->num_samples)
+	return;
+
+    sample_ptr = &player->mod->samples[sample];
+
     CHAN.period = period;
     CHAN.sample = sample;
-
-    if (sample == NULL)
-	return;
 
     if (volume >= 0.0) {
 	CHAN.volume = volume;
     } else {
-	CHAN.volume = sample->volume;
+	CHAN.volume = sample_ptr->volume;
     }
-    CHAN.c4spd = sample->c4spd;
+    CHAN.c4spd = sample_ptr->c4spd;
 
     CHAN.cut_channel = -1;
     CHAN.delay_trigger = -1;
@@ -79,17 +83,17 @@ void ARM_TriggerChannel(ARM_Tracker* player, int c, ARM_Sample* sample, float pe
     /* Program voice. */
     player->mixer->SetVoicePatch(player->mixer,
 				 CHAN.voice,
-				 CHAN.sample->patch);
+				 sample_ptr->patch);
     player->mixer->SetVoicePos(player->mixer,
 			       CHAN.voice,
 			       0);
 
     /* Program looping? */
-    if (CHAN.sample->repeat_enabled) {
+    if (sample_ptr->repeat_enabled) {
 	player->mixer->SetVoiceLoopPos(player->mixer,
 				       CHAN.voice,
-				       CHAN.sample->repeat_ofs,
-				       CHAN.sample->repeat_len);
+				       sample_ptr->repeat_ofs,
+				       sample_ptr->repeat_len);
 	player->mixer->SetVoiceLoopMode(player->mixer,
 					CHAN.voice,
 					1);
@@ -154,7 +158,7 @@ static void ProcessNewRow(ARM_Tracker* player)
     int c;
     int pattern;
     int pos;
-    ARM_Sample* sample;
+    int sample;
 
     pattern = player->pattern;
     pos = player->pos;
@@ -166,24 +170,24 @@ static void ProcessNewRow(ARM_Tracker* player)
 
     for (c = 0; c < player->num_channels && c < 16; c++) {
 	ARM_Note* note;
+	ARM_CommandType* callbacks;
 
 	CHAN.command_name = "";
 
 	/* Clean up after the previous row's command, if any. */
-	if (CHAN.command.callbacks != NULL &&
-	    CHAN.command.callbacks->cleanup_proc != NULL)
-	    CHAN.command.callbacks->cleanup_proc(player, c);
-
+	callbacks = ARM_GetCallbacksForNum(CHAN.command.cmd);
+	if (callbacks->cleanup_proc != NULL)
+	    callbacks->cleanup_proc(player, c);
+	
 	note = ARM_GetPatternNote(&player->mod->patterns[pattern], pos, c);
 
 	if (note == NULL)
 	    continue;
 
-	if (note->cmd.callbacks == NULL)
-	    note->cmd.callbacks = &command_null_callbacks;
+	callbacks = ARM_GetCallbacksForNum(note->cmd.cmd);
 
-	if (!(note->cmd.callbacks->no_reset_sample)
-	    && note->sample != NULL)
+	if (!(callbacks->no_reset_sample)
+	    && note->sample != -1)
 	    sample = note->sample;
 	else
 	    sample = CHAN.sample;
@@ -196,8 +200,8 @@ static void ProcessNewRow(ARM_Tracker* player)
 	    ARM_TriggerChannel(player, c, sample, note->period, note->volume);
 	} else {
 	    /* If this isn't a trigger but there is a sample, reset volume. */
-	    if (CHAN.sample != NULL && note->sample != NULL)
-		CHAN.volume = CHAN.sample->volume;
+	    if (note->sample != -1 && CHAN.sample != -1)
+		CHAN.volume = player->mod->samples[CHAN.sample].volume;
 	}
 
 	/* If an explicit volume was given, use that. */
@@ -213,9 +217,8 @@ static void ProcessNewRow(ARM_Tracker* player)
 	CHAN.command = note->cmd;
 
 	/* Call the command initialization proc. */
-	if (CHAN.command.callbacks != NULL &&
-	    CHAN.command.callbacks->init_proc != NULL)
-	    CHAN.command.callbacks->init_proc(player, c, note->cmd.arg1, note->cmd.arg2);
+	if (callbacks->init_proc != NULL)
+	    callbacks->init_proc(player, c, note->cmd.arg1, note->cmd.arg2);
 
     }
 
@@ -240,16 +243,17 @@ void ARM_RenderOneTick(ARM_Tracker* player, float mix_divisor)
 	ARM_Sample* sample;
 	float tremolo_volume_shift = ARM_MOD_CalcTremolo(player, c);
 	float v, freq, period, c4spd;
+	ARM_CommandType* callbacks;
 
 	/* Apply the current effect. */
-	if (CHAN.command.callbacks != NULL &&
-	    CHAN.command.callbacks->pre_tick_proc != NULL)
-	    CHAN.command.callbacks->pre_tick_proc(player, c);
-	
+	callbacks = ARM_GetCallbacksForNum(CHAN.command.cmd);
+	if (callbacks->pre_tick_proc != NULL)
+	    callbacks->pre_tick_proc(player, c);
+
 	/* Only update volume, freq, etc if there is a sample. */
-	if (CHAN.sample != NULL) {
+	if (CHAN.sample != -1) {
 	    v = (CHAN.volume + tremolo_volume_shift) / 64.0;
-	    v = v * player->mod->master_volume / 64.0;
+/*	    v = v * player->mod->master_volume / 64.0;*/
 	    v = v * player->mod->global_volume / 64.0;
 	    CLAMP(v, 0.0, 1.0);
 	    
@@ -274,9 +278,8 @@ void ARM_RenderOneTick(ARM_Tracker* player, float mix_divisor)
 	}	    
 
 	/* Apply the current effect. */
-	if (CHAN.command.callbacks != NULL &&
-	    CHAN.command.callbacks->post_tick_proc != NULL)
-	    CHAN.command.callbacks->post_tick_proc(player, c);	
+	if (callbacks->post_tick_proc != NULL)
+	    callbacks->post_tick_proc(player, c);	
 	
     }
 
@@ -299,6 +302,7 @@ void ARM_InitTracker(ARM_Tracker* player, ARM_Module* mod, Mixer* mixer, int mix
     /* Initialize each channel. */
     for (i = 0; i < mod->num_channels; i++) {
 	memset(&player->channels[i], 0, sizeof (ARM_Channel));
+	player->channels[i].sample = -1;
 	player->channels[i].panning = mod->default_pan[i];
 	player->channels[i].patternloop_count = -1;
 	player->channels[i].voice = player->mixer->AllocVoice(player->mixer, 0);

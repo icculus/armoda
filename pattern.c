@@ -27,6 +27,7 @@ int ARM_AllocPatternData(ARM_Pattern* ptn, int rows, int cols)
     }
 
     memset(&n, 0, sizeof (n));
+    n.sample = -1;
     n.volume = -1.0;
     for (r = 0; r < rows; r++) {
 	for (c = 0; c < cols; c++) {

@@ -1,16 +1,33 @@
 CC=cc
 SDL_CONFIG=sdl-config
-CFLAGS=-W -Wall `$(SDL_CONFIG) --cflags` -g -Wno-unused -DBYTE_ORDER=BIG_ENDIAN
+CFLAGS=-W -Wall `$(SDL_CONFIG) --cflags` -ggdb -Wno-unused -DBYTE_ORDER=BIG_ENDIAN -O3 -ffast-math
 LDFLAGS=`$(SDL_CONFIG) --libs`
-OBJS=launcher.o core.o pattern.o osutil.o load_mod.o commands_mod.o load_s3m.o commands_s3m.o mixer_sdl.o mixer_software.o
+LIB_OBJS=core.o pattern.o osutil.o commands.o load_mod.o commands_mod.o load_s3m.o commands_s3m.o load_dsm.o mixer_sdl.o mixer_software.o module.o
+PLAYER_OBJS=launcher.o
+MOD2C_OBJS=mod2c.o
+TEST_OBJS=mod2c_test.o
 
-armoda: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o armoda $(OBJS)
+.PHONY: all clean mod2c-data
+
+all: armoda mod2c
+
+armoda: $(PLAYER_OBJS) $(LIB_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o armoda $(LIB_OBJS) $(PLAYER_OBJS)
+
+mod2c: $(LIB_OBJS) $(MOD2C_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o mod2c $(LIB_OBJS) $(MOD2C_OBJS)
+
+mod2c_test: $(LIB_OBJS) mod2c-data $(TEST_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LIB_OBJS) $(TEST_OBJS) deflorat.mod.o -o mod2c_test
+
+mod2c-data: mod2c
+	./mod2c deflorat deflorat.mod
+	$(CC) $(CFLAGS) $(LDFLAGS) -c deflorat.mod.c
 
 .c.o:
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f armoda
+	rm -f armoda mod2c mod2c_test
 	rm -f *.o
 	rm -f *~
