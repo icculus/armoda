@@ -1,0 +1,16 @@
+CC=gcc
+SDL_CONFIG=sdl-config
+CFLAGS=-W -Wall `$(SDL_CONFIG) --cflags` -ggdb -Wno-unused -DBYTE_ORDER=LITTLE_ENDIAN
+LDFLAGS=`$(SDL_CONFIG) --libs`
+OBJS=launcher.o core.o pattern.o osutil.o load_mod.o commands_mod.o load_s3m.o commands_s3m.o mixer_sdl.o mixer_software.o
+
+armoda: $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o armoda $(OBJS)
+
+.c.o:
+	$(CC) -c $(CFLAGS) -o $@ $<
+
+clean:
+	rm -f armoda
+	rm -f *.o
+	rm -f *~
