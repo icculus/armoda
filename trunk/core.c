@@ -8,6 +8,8 @@
 
 #define CHAN player->channels[c]
 
+
+
 void ARM_ResetChannel(ARM_Tracker* player, int c)
 {
     /* Stop playback of this channel. */
@@ -52,7 +54,41 @@ float ARM_CalcSemitones(float period, float semitones)
     return period * pow(2.0, ((float)semitones/-12.0));
 }
 
-void ARM_TriggerChannel(ARM_Tracker* player, int c, int sample, float period, float volume)
+const char* ARM_GetNameForNote(int note)
+{
+    const char* names[12] = {
+	"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
+    };
+    unsigned int semitone = (unsigned int)note % 12;
+    return (semitone < 12 ? names[semitone] : "??");
+}
+
+float ARM_GetLogPeriodForNote(int note)
+{
+    float semitones = note - ARM_MIDDLE_C_NOTE;
+    return pow(2.0, semitones / -12.0);
+}
+
+float ARM_GetPeriodForNote(ARM_Tracker* player, int note)
+{
+    switch (player->mod->period_mode) {   
+    case ARM_PERIOD_LOG:
+	return ARM_GetLogPeriodForNote(note);
+    default: return 0.0;
+    }
+}
+
+int ARM_FindNoteForLogPeriod(float period)
+{
+    return (int)floor(log(period) / log(2.0) * -12.0 + (float)ARM_MIDDLE_C_NOTE + 0.5);
+}
+
+int ARM_GetOctaveForNote(int note)
+{
+    return note/12;
+}
+
+void ARM_TriggerChannel(ARM_Tracker* player, int c, int sample, int note, float volume)
 {
     ARM_Sample *sample_ptr;
 
@@ -61,7 +97,7 @@ void ARM_TriggerChannel(ARM_Tracker* player, int c, int sample, float period, fl
 
     sample_ptr = &player->mod->samples[sample];
 
-    CHAN.period = period;
+    CHAN.period = ARM_GetPeriodForNote(player, note);
     CHAN.sample = sample;
 
     if (volume >= 0.0) {
@@ -158,7 +194,7 @@ static void ProcessNewRow(ARM_Tracker* player)
     int c;
     int pattern;
     int pos;
-    int sample;
+    int sample;    
 
     pattern = player->pattern;
     pos = player->pos;
@@ -167,6 +203,8 @@ static void ProcessNewRow(ARM_Tracker* player)
 	player->patterndelay--;
 	return;
     }
+
+    printf("%3i: ", player->pos);
 
     for (c = 0; c < player->num_channels && c < 16; c++) {
 	ARM_Note* note;
@@ -192,12 +230,12 @@ static void ProcessNewRow(ARM_Tracker* player)
 	else
 	    sample = CHAN.sample;
 
-	if (note->period > 27392.0) {
+	if (note->note == 255) {
 	    /* Handle keyoff. */
 	    ARM_ResetChannel(player, c);
         } else if (note->trigger) {
 	    /* Trigger this note. */
-	    ARM_TriggerChannel(player, c, sample, note->period, note->volume);
+	    ARM_TriggerChannel(player, c, sample, note->note, note->volume);
 	} else {
 	    /* If this isn't a trigger but there is a sample, reset volume. */
 	    if (note->sample != -1 && CHAN.sample != -1)
@@ -220,7 +258,14 @@ static void ProcessNewRow(ARM_Tracker* player)
 	if (callbacks->init_proc != NULL)
 	    callbacks->init_proc(player, c, note->cmd.arg1, note->cmd.arg2);
 
+	if (note->note == 255 || note->note == 0) {
+	    printf("    |");
+	} else {
+	    printf("%3s%i|", ARM_GetNameForNote(note->note), ARM_GetOctaveForNote(note->note));
+	}
     }
+
+    printf("\n");
 
 }
 
@@ -259,11 +304,13 @@ void ARM_RenderOneTick(ARM_Tracker* player, float mix_divisor)
 	    
 	    /* Calculate frequency. */
 	    period = CHAN.period;
-	    CLAMP(period, 56.0, 27392.0);
+
+	    /* Prevent division by zero. */
+	    LOWER_CLAMP(period, 0.0001);
 	    if (CHAN.vibrato_state.enabled)
 		period += CHAN.vibrato_state.period_shift;
 	    c4spd = CHAN.c4spd;
-	    freq = 1712.0 * c4spd / period;
+	    freq = c4spd / period;
 	    
 	    /* Update the channel for this tick. */
 	    player->mixer->SetVoiceRate(player->mixer,
@@ -326,6 +373,8 @@ void ARM_InitTracker(ARM_Tracker* player, ARM_Module* mod, Mixer* mixer, int mix
     player->goto_pattern = -1;
     player->patternbreak = -1;
     player->patterndelay = 0;
+    player->pos = 0;
+    player->tick = 0;
 }
 
 void ARM_FreeTrackerData(ARM_Tracker* player)

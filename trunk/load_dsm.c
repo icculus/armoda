@@ -148,8 +148,6 @@ int ARM_LoadModule_DSM(ARM_Module* mod, const char *filename)
 	mod->default_pan[i] = (dsm_panning[i] == 0xA4 ?
 			       128 :   /* surround not supported yet, so center it */
 			       (dsm_panning[i] < 0x80 ? (dsm_panning[i] << 1) : 255));
-	/* FIXME: This is probably not right. Clean up. */
-	printf("panning %i\n", mod->default_pan[i]);
     }
 
     /* Read blocks. */
@@ -250,21 +248,20 @@ int ARM_LoadModule_DSM(ARM_Module* mod, const char *filename)
 
 		fread(&present, 1, 1, f);
 		if (present) {
-
 		    note = ARM_GetPatternNote(pat, row, present & 0x0F);
 
 		    /* Note present? */
 		    if (present & 0x80) {
 			fread(&raw_note, 1, 1, f);
 			if (raw_note != 255) {
-			    note->period = 0; /* (float)note_to_period[raw_note];*/
+			    note->note = raw_note - 1;
 			    note->trigger = 1;
 			}
 		    } else {
-			note->period = 0.0;
+			note->note = 0;
 			note->trigger = 0;
 		    }
-
+		
 		    /* Instrument present? */
 		    if (present & 0x40) {
 			fread(&raw_ins, 1, 1, f);
@@ -273,7 +270,7 @@ int ARM_LoadModule_DSM(ARM_Module* mod, const char *filename)
 		    } else {
 			note->sample = -1;
 		    }
-
+		    
 		    /* Volume present? */
 		    if (present & 0x20) {
 			fread(&raw_vol, 1, 1, f);
@@ -281,7 +278,7 @@ int ARM_LoadModule_DSM(ARM_Module* mod, const char *filename)
 		    } else {
 			note->volume = -1.0;
 		    }
-
+		    
 		    /* Effect present? */
 		    if (present & 0x10) {
 			int argx, argy;
@@ -297,6 +294,7 @@ int ARM_LoadModule_DSM(ARM_Module* mod, const char *filename)
 		} else {
 		    row++;
 		}
+		
 	    }
 
 	    /* Done with this pattern. */
@@ -306,6 +304,8 @@ int ARM_LoadModule_DSM(ARM_Module* mod, const char *filename)
 	}
 
     }	
+
+    mod->period_mode = ARM_PERIOD_LOG;
     
     fclose(f);
     return 0;

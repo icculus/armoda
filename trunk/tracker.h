@@ -32,6 +32,9 @@ typedef struct ARM_Channel {
 
 } ARM_Channel;
 
+#define ARM_PERIOD_LOG       0
+#define ARM_PERIOD_LINEAR    1
+
 typedef struct ARM_Module {
     char *title;
     int num_channels;
@@ -50,7 +53,12 @@ typedef struct ARM_Module {
 
     int initial_speed;
     int initial_bpm;
+
+    int period_mode;
+
 } ARM_Module;
+
+#define ARM_MIDDLE_C_NOTE    48         /* note number of middle C */
 
 typedef struct ARM_Tracker {
     int mixrate;
@@ -91,9 +99,9 @@ typedef struct ARM_Pattern {
 } ARM_Pattern;
 
 typedef struct ARM_Note {
-    int sample;
     float volume;
-    float period;
+    int sample;
+    uint8_t note;
     int trigger;
     struct ARM_Command cmd;
 } ARM_Note;
@@ -113,7 +121,7 @@ float ARM_CalcSemitones(float period, float semitones);
 /* Calculates the period value that is the given number of semitones above or below
    the given period. */
 
-void ARM_TriggerChannel(ARM_Tracker* player, int channel, int sample, float period, float volume);
+void ARM_TriggerChannel(ARM_Tracker* player, int channel, int sample, int note, float volume);
 /* Triggers playback on a channel. */
 
 void ARM_InitTracker(ARM_Tracker* player, ARM_Module* mod, Mixer* mixer, int mixrate);
@@ -128,6 +136,23 @@ void ARM_AdvancePosition(ARM_Tracker* player);
 
 void ARM_FreeTrackerData(ARM_Tracker* player);
 /* Deinitializes the tracker. Frees all data, unloads patches, etc. */
+
+float ARM_GetLogPeriodForNote(int note);
+/* Computes a logarithmic period for the given note. */
+
+float ARM_GetPeriodForNote(ARM_Tracker* player, int note);
+/* Computes a period for the given note, based on the player's period settings. */
+
+const char* ARM_GetNameForNote(int note);
+/* Returns a pointer to a note's name. */
+
+int ARM_GetOctaveForNote(int note);
+/* Returns a note's octave number. */
+
+int ARM_FindNoteForLogPeriod(float period);
+/* Finds the note number closest to the given logarithmic period.
+   Intended mainly to help the MOD loader, since MOD files store raw
+   periods instead of note numbers. */
 
 #include "module.h"
 #include "pattern.h"
