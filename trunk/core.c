@@ -57,6 +57,9 @@ void ARM_TriggerChannel(ARM_Tracker* player, int c, ARM_Sample* sample, float pe
     CHAN.period = period;
     CHAN.sample = sample;
 
+    if (sample == NULL)
+	return;
+
     if (volume >= 0.0) {
 	CHAN.volume = volume;
     } else {
