@@ -16,10 +16,10 @@ static void FreezeSamples(FILE* out_c, ARM_Module* mod)
             if (c%16 == 0)
                 fprintf(out_c, "\n    ");
             c++;
-            fprintf(out_c, "%3u,", (unsigned int)(mod->samples[i].data[s] * 128.0 + 128.0));
+            fprintf(out_c, "%3u,", (unsigned int)((float)mod->samples[i].data[s] * 128.0 + 128.0));
         }
     }
-    fprintf(out_c, "0};\n\n");
+fprintf(out_c, "0};\n\n");
 }
 
 static unsigned int LookupSampleNum(ARM_Module* mod, ARM_Sample* ptr)
