@@ -24,7 +24,7 @@ static void MixerProc(void *dummy, Uint8 *audio, int length)
 {
     int i;
     int amt = length;
-    (void)dummy;
+
     Sint16 *out = (Sint16 *)audio;
     if (sdl_output_avail < length / 2) {
 	memset(out, 0, length);
