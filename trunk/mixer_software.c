@@ -223,6 +223,7 @@ static int SetVoiceVolume(Mixer* mixer, int voice, float volume)
     SoftMixerPrivData* data = PRIV(mixer);
 
     CLAMP(volume, 0.0, 1.0);
+
     data->voices[voice].volume = volume;
 
     return 0;
@@ -234,6 +235,7 @@ static int SetVoiceRate(Mixer* mixer, int voice, float rate)
     SoftMixerPrivData* data = PRIV(mixer);
 
     LOWER_CLAMP(rate, 0.0);
+
     rate /= data->rate;
     data->voices[voice].rate = rate;
     data->voices[voice].rate_fp = (unsigned int)((float)rate * (float)((unsigned int)1 << FIXED_BITS));
@@ -329,9 +331,9 @@ static int Render(Mixer* mixer, unsigned int frames, float divisor)
 	if (data->voices[v].allocated
 	    && data->voices[v].triggered
 	    && data->voices[v].patch >= 0) {
-	    
+
 	    float left_vol, right_vol;
-	    float panning = (data->voices[v].balance + 0.5) / 2.0;
+	    float panning = (data->voices[v].balance + 1.0) / 2.0;
 	    float *out = stereo_out;
 	    float *samples = data->patches[data->voices[v].patch].samples;
 	    unsigned int pos_fp = data->voices[v].pos_fp;
@@ -341,6 +343,7 @@ static int Render(Mixer* mixer, unsigned int frames, float divisor)
 	    left_vol = data->voices[v].volume * (1.0 - panning) / divisor;
 	    right_vol = data->voices[v].volume * panning / divisor;
 
+	    /* FIXME: optimize this. Some (optional) assembly might not be a bad idea. */
 	    for (frame = 0; frame < frames; frame++) {
 		float sample;
 

@@ -7,7 +7,7 @@
 #include "commands_s3m.h"
 
 /* S3M period table. Borrowed from FireMod. */
-uint32_t note_to_period[134] = {
+static uint32_t note_to_period[134] = {
   27392,25856,24384,23040,21696,20480,19328,18240,17216,16256,15360,14496,
   13696,12928,12192,11520,10848,10240,9664, 9120, 8608, 8128, 7680, 7248,
   6848, 6464, 6096, 5760, 5424, 5120, 4832, 4560, 4304, 4064, 3840, 3624,
@@ -29,14 +29,14 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
     uint8_t argz;
 
     memset(&note->cmd, 0, sizeof(ARM_Command));
-    note->cmd.callbacks = &command_null_callbacks;
+    note->cmd.cmd = 0;
 
     argz = ((argx & 0x0F) << 4) + (argy & 0x0F);
 
     switch (code - 1 + 'A') {
     case 'A': 
 	/* Identical to MOD set speed, but allows a wider range. */
-	note->cmd.callbacks = &command_mod_set_speed_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_speed_callbacks);
 	note->cmd.arg1 = argz;
 	if (note->cmd.arg1 == 0)
 	    note->cmd.arg1 = 1;
@@ -44,14 +44,14 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 
     case 'B':
 	/* Identical to MOD pattern jump. */
-	note->cmd.callbacks = &command_mod_goto_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_goto_callbacks);
 	note->cmd.arg1 = argz;
 	note->cmd.arg2 = -1;
 	break;
 
     case 'C':
 	/* Identical to MOD pattern break. */
-	note->cmd.callbacks = &command_mod_goto_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_goto_callbacks);
 	note->cmd.arg1 = -1;
 	note->cmd.arg2 = argx * 10 + argy;
 	break;
@@ -59,48 +59,48 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
     case 'D':
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = argy;
-	note->cmd.callbacks = &command_s3m_volslide_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_volslide_callbacks);
 	break;
 
     case 'E':
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = argy;
-	note->cmd.callbacks = &command_s3m_period_slide_down_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_period_slide_down_callbacks);
 	break;
 
     case 'F':
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = argy;
-	note->cmd.callbacks = &command_s3m_period_slide_up_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_period_slide_up_callbacks);
 	break;
 
     case 'G':
-	note->cmd.callbacks = &command_mod_slide_to_note_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_slide_to_note_callbacks);
 	note->cmd.arg1 = (int)argz*4;
 	note->cmd.arg2 = note->period;
 	note->trigger = 0;
 	break;
 
     case 'H':
-	note->cmd.callbacks = &command_s3m_vibrato_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_vibrato_callbacks);
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = (int)argy * 4;
 	break;
 
     case 'I':
-	note->cmd.callbacks = &command_s3m_tremor_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_tremor_callbacks);
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = argy;
 	break;
 
     case 'J':
-	note->cmd.callbacks = &command_mod_arpeggio_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_arpeggio_callbacks);
 	note->cmd.arg1 = (int)argx;
 	note->cmd.arg2 = (int)argy;
 	break;
 
     case 'K':
-	note->cmd.callbacks = &command_s3m_volslide_and_vibrato_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_volslide_and_vibrato_callbacks);
 	if (argx != 0)
 	    note->cmd.arg1 = argx;
 	else
@@ -108,7 +108,7 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	break;
 
     case 'L':
-	note->cmd.callbacks = &command_s3m_period_and_volslide_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_period_and_volslide_callbacks);
 	if (argx != 0)
 	    note->cmd.arg1 = argx;
 	else
@@ -117,18 +117,18 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	break;
 
     case 'O':
-	note->cmd.callbacks = &command_mod_offset_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_offset_callbacks);
 	note->cmd.arg1 = (uint32_t)argz << 8;
 	break;
 
     case 'Q':
-	note->cmd.callbacks = &command_s3m_retrig_and_volslide_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_retrig_and_volslide_callbacks);
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = argy;
 	break;
 
     case 'R':
-	note->cmd.callbacks = &command_s3m_tremolo_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_tremolo_callbacks);
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = (int)argy * 4;
 	break;
@@ -142,7 +142,7 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	    /* enable glissando on porta to note */
 	    break;
 	case 2:
-	    note->cmd.callbacks = &command_mod_set_c4spd_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_c4spd_callbacks);
 	    if (argy & 8) argy |= 0xF0;
 	    note->cmd.arg1 = ARM_ConvertFinetuneToC4SPD(argy);
 	    break;
@@ -153,34 +153,34 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	    /* set tremolo waveform */
 	    break;
 	case 8:
-	    note->cmd.callbacks = &command_mod_set_channel_pan_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_channel_pan_callbacks);
 	    note->cmd.arg1 = (int)argy * 255 / 15;
 	    break;
 	case 0xA:
-	    note->cmd.callbacks = &command_mod_set_channel_pan_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_channel_pan_callbacks);
 	    note->cmd.arg1 = (argy > 7 ? (int)argy - 8 : (int)argy + 8);
 	    note->cmd.arg1 = note->cmd.arg1 * 255 / 15;
 	    break;
 	case 0xB:
 	    if (argy == 0) {
-		note->cmd.callbacks = &command_mod_set_pattern_loop_callbacks;
+		note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_pattern_loop_callbacks);
 		note->cmd.arg1 = 0;
 	    } else {
-		note->cmd.callbacks = &command_mod_do_pattern_loop_callbacks;
+		note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_do_pattern_loop_callbacks);
 		note->cmd.arg1 = argy;
 	    }
 	    break;
 	case 0xC:
-	    note->cmd.callbacks = &command_mod_cut_channel_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_cut_channel_callbacks);
 	    note->cmd.arg1 = argy;
 	    break;
 	case 0xD:
 	    printf("DEBUG: delay trigger disabled\n");
-/*	    note->cmd.callbacks = &command_mod_delay_trigger_callbacks; */
+/*	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks); */
 	    note->cmd.arg1 = argy;
 	    break;
 	case 0xE:
-	    note->cmd.callbacks = &command_mod_delay_pattern_callbacks;
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_pattern_callbacks);
 	    note->cmd.arg1 = argy;
 	    break;
 	default:
@@ -189,12 +189,12 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	break;
 
     case 'T':
-	note->cmd.callbacks = &command_mod_set_tempo_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_set_tempo_callbacks);
 	note->cmd.arg1 = argz;
 	break;
 
     case 'U':
-	note->cmd.callbacks = &command_s3m_vibrato_callbacks;
+	note->cmd.cmd = ARM_GetNumForCallbacks(&command_s3m_vibrato_callbacks);
 	note->cmd.arg1 = argx;
 	note->cmd.arg2 = (int)argy;
 	break;
@@ -469,7 +469,8 @@ int ARM_LoadModule_S3M(ARM_Module* mod, const char *filename)
 		ARM_Note note;
 		
 		memset(&note, 0, sizeof (ARM_Note));
-		note.cmd.callbacks = &command_null_callbacks;
+		note.sample = -1;
+		note.cmd.cmd = 0;
 				
 		chan = tmpu8 & 31;
 		if (tmpu8 & 32) {
@@ -484,8 +485,8 @@ int ARM_LoadModule_S3M(ARM_Module* mod, const char *filename)
 		    }
 		    
 		    fread(&tmp2, 1, 1, f);
-		    CLAMP(tmp2, 1, mod->num_samples);
-		    note.sample = &mod->samples[tmp2-1];
+		    UPPER_CLAMP(tmp2, mod->num_samples);
+		    note.sample = (int)tmp2-1;
 		    
 		}
 		if (tmpu8 & 64) {

@@ -29,6 +29,7 @@ extern ARM_CommandType command_mod_delay_trigger_callbacks;
 extern ARM_CommandType command_mod_delay_pattern_callbacks;
 extern ARM_CommandType command_mod_retrigger_callbacks;
 extern ARM_CommandType command_mod_set_channel_pan_callbacks;
+/* Be sure to add any more callbacks to commands.c table */
 
 void command_mod_arpeggio_init(struct ARM_Tracker* player, int c, int arg1, int arg2);
 void command_mod_arpeggio_cleanup(struct ARM_Tracker* player, int c);

@@ -6,7 +6,7 @@
 #include "mixer.h"
 
 typedef struct ARM_Channel {
-    struct ARM_Sample* sample;
+    int sample;
     float period;
     float c4spd;
     float volume;
@@ -91,7 +91,7 @@ typedef struct ARM_Pattern {
 } ARM_Pattern;
 
 typedef struct ARM_Note {
-    struct ARM_Sample* sample;
+    int sample;
     float volume;
     float period;
     int trigger;
@@ -113,7 +113,7 @@ float ARM_CalcSemitones(float period, float semitones);
 /* Calculates the period value that is the given number of semitones above or below
    the given period. */
 
-void ARM_TriggerChannel(ARM_Tracker* player, int channel, ARM_Sample* sample, float period, float volume);
+void ARM_TriggerChannel(ARM_Tracker* player, int channel, int sample, float period, float volume);
 /* Triggers playback on a channel. */
 
 void ARM_InitTracker(ARM_Tracker* player, ARM_Module* mod, Mixer* mixer, int mixrate);
