@@ -22,7 +22,8 @@ int main(int argc, char *argv[])
     int startspeed = 0;
     int startbpm = 0;
     int silence = 0;
-    int force_vol = 0;
+    int show_song_info = 0;
+    int show_sample_info = 0;
     int arg;
 
     if (argc < 2) {
@@ -31,22 +32,22 @@ int main(int argc, char *argv[])
     }
 
     for (arg = 1; arg < argc-1; arg++) {
-	if (!strcmp(argv[arg], "-o")) {
+	if (!strcmp(argv[arg], "--order")) {
 	    startord = atoi(argv[arg+1]);
 	    printf("Starting at order %i.\n", startord);
 	    arg++;
-	} else if (!strcmp(argv[arg], "-s")) {
+	} else if (!strcmp(argv[arg], "--speed")) {
 	    startspeed = atoi(argv[arg+1]);
 	    printf("Starting at speed %i.\n", startspeed);
 	    arg++;
-	} else if (!strcmp(argv[arg], "-b")) {
+	} else if (!strcmp(argv[arg], "--bpm")) {
 	    startbpm = atoi(argv[arg+1]);
 	    printf("Starting at %i BPM.\n", startbpm);
 	    arg++;
-	} else if (!strcmp(argv[arg], "-v")) {
-	    force_vol = atoi(argv[arg+1]);
-	    printf("Force volume %i.\n", force_vol);
-	    arg++;
+	} else if (!strcmp(argv[arg], "--songinfo")) {
+	    show_song_info = 1;
+	} else if (!strcmp(argv[arg], "--sampleinfo")) {
+	    show_sample_info = 1;
 	} else break;
     }
 
@@ -88,10 +89,32 @@ int main(int argc, char *argv[])
 	    printf("Unknown file extension '%s'.\n", ext);
 	}
 
-	if (force_vol)
-	    mod.master_volume = force_vol;
-
 	ARM_InitTracker(&player, &mod, mixer, RATE);
+
+	if (show_song_info) {
+	    printf("+- Module info: %s\n", argv[arg]);
+	    printf("| Title:      %s\n", mod.title);
+	    printf("| Channels:   %i\n", mod.num_channels);
+	    printf("| Samples:    %i\n", mod.num_samples);
+	    printf("| Length:     %i patterns\n", mod.num_order);
+	    printf("| Vol slides: %s\n", (mod.flags & MODULE_FLAG_VOLSLIDE_ON_FIRST_TICK ? "fast" : "normal"));
+	    printf("\n");
+	}
+
+	if (show_sample_info) {
+	    int s;
+	    printf("+- Sample info: %s\n", argv[arg]);
+	    printf("|         Length    C4SPD  Loop?  Name/Comments\n");
+	    for (s = 0; s < mod.num_samples; s++) {		
+		printf("| %3i:   %6i    %5i   %s    %s\n",
+		       s,
+		       mod.samples[s].length,
+		       mod.samples[s].c4spd,
+		       mod.samples[s].repeat_enabled ? "yes" : "no ",
+		       mod.samples[s].name);
+	    }
+	    printf("\n");
+	}
 
 	if (startord != 0) {
 	    ARM_StartPattern(&player, startord, 0);
