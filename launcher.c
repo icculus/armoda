@@ -7,11 +7,32 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <SDL/SDL.h>
 #include "tracker.h"
 #include "mixer_sdl.h"
 
 #define RATE 44100    /* FIXME: parameterize this */
+
+static int skip_flag = 0;
+static int exit_flag = 0;
+
+static void SignalHandler(int sig)
+{
+    if (sig == SIGINT) {
+	printf("Interrupt.\n");
+	if (exit_flag == 1) {
+	    printf("Forced exit.\n");
+	    exit(1);
+	} else if (skip_flag == 1) {
+	    printf("Exit request.\n");
+	    exit_flag = 1;
+	} else {
+	    printf("Next track.\n");
+	    skip_flag = 1;
+	}
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -30,6 +51,8 @@ int main(int argc, char *argv[])
 	printf("You must supply a filename.\n");
 	return 1;
     }
+
+    signal(SIGINT, SignalHandler);
 
     for (arg = 1; arg < argc-1; arg++) {
 	if (!strcmp(argv[arg], "--order")) {
@@ -136,6 +159,9 @@ int main(int argc, char *argv[])
 	    ARM_RenderOneTick(&player, (float)player.num_channels);
 	    ARM_AdvancePosition(&player);
 
+	    if (exit_flag || skip_flag)
+		break;
+
 	}
 	
 	ARM_FreeTrackerData(&player);
@@ -143,10 +169,15 @@ int main(int argc, char *argv[])
 
 	printf("End of module %s.\n", argv[arg]);
 
+	skip_flag = 0;
+	if (exit_flag)
+	    break;
+
     }
 
     /* Ok, so this is cheeseball. */
-    SDL_Delay(1000);
+    if (!exit_flag)
+	SDL_Delay(1000);
 
     /* Stop SDL's audio output. */
     MXR_CloseSDLOutput(mixer);
