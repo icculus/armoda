@@ -574,20 +574,10 @@ ARM_CommandType command_mod_cut_channel_callbacks = { command_mod_cut_channel_in
 void command_mod_delay_trigger_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
     CHAN.command_name = "delay trigger";
-//    ARM_ResetChannel(&CHAN);
-    CHAN.delay_trigger = arg1;
 }
 
 void command_mod_delay_trigger_tick(struct ARM_Tracker* player, int c)
 {
-    if (player->tick != 0) {
-	if (CHAN.delay_trigger != 0 && player->tick >= CHAN.delay_trigger - 1) {
-	    ARM_TriggerChannel(player, c,
-			       CHAN.sample,
-			       CHAN.period,
-			       CHAN.volume);
-	}
-    }
 }
 
 ARM_CommandType command_mod_delay_trigger_callbacks = { command_mod_delay_trigger_init, command_mod_delay_trigger_tick, NULL, NULL, 1 };

@@ -14,6 +14,7 @@ void ARM_ResetChannel(ARM_Tracker* player, int c)
 {
     /* Stop playback of this channel. */
     player->mixer->StopVoice(player->mixer, CHAN.voice);
+    CHAN.period = 0.0;
 
     /* Cancel delay trigger and note cut effects. */
     CHAN.delay_trigger = -1;
@@ -204,8 +205,6 @@ static void ProcessNewRow(ARM_Tracker* player)
 	return;
     }
 
-    printf("%3i: ", player->pos);
-
     for (c = 0; c < player->num_channels && c < 16; c++) {
 	ARM_Note* note;
 	ARM_CommandType* callbacks;
@@ -258,14 +257,7 @@ static void ProcessNewRow(ARM_Tracker* player)
 	if (callbacks->init_proc != NULL)
 	    callbacks->init_proc(player, c, note->cmd.arg1, note->cmd.arg2);
 
-	if (note->note == 255 || note->note == 0) {
-	    printf("    |");
-	} else {
-	    printf("%3s%i|", ARM_GetNameForNote(note->note), ARM_GetOctaveForNote(note->note));
-	}
     }
-
-    printf("\n");
 
 }
 
@@ -303,10 +295,9 @@ void ARM_RenderOneTick(ARM_Tracker* player, float mix_divisor)
 	    CLAMP(v, 0.0, 1.0);
 	    
 	    /* Calculate frequency. */
+	    CLAMP(CHAN.period, ARM_GetPeriodForNote(player, 96), ARM_GetPeriodForNote(player, 0));
 	    period = CHAN.period;
 
-	    /* Prevent division by zero. */
-	    LOWER_CLAMP(period, 0.0001);
 	    if (CHAN.vibrato_state.enabled)
 		period += CHAN.vibrato_state.period_shift;
 	    c4spd = CHAN.c4spd;
@@ -331,7 +322,7 @@ void ARM_RenderOneTick(ARM_Tracker* player, float mix_divisor)
     }
 
     /* Render. */
-    player->mixer->Render(player->mixer, player->frames_per_tick, mix_divisor);
+    player->mixer->Commit(player->mixer, player->frames_per_tick, mix_divisor);
 
 }
     

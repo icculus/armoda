@@ -3,7 +3,7 @@
 
 typedef struct Mixer {
 
-    int (*Render)(struct Mixer* mixer, unsigned int frames, float divisor);
+    int (*Commit)(struct Mixer* mixer, unsigned int frames, float divisor);
     /* Renders the given number of frames (one frame is a sample for each channel).
        divisor is a global volume divisor; every voice's volume is divided by
        this amount prior to mixing. */

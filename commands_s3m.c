@@ -65,7 +65,7 @@ void command_s3m_period_slide_up_init(struct ARM_Tracker* player, int c, int arg
 	amt = arg2;
     } else {
 	callbacks = &command_mod_period_slide_callbacks;
-	amt = arg2 * 4;
+	amt = arg2;
     }
     CHAN.command.cmd = ARM_GetNumForCallbacks(callbacks);
     if (callbacks->init_proc != NULL)
@@ -95,7 +95,7 @@ void command_s3m_period_slide_down_init(struct ARM_Tracker* player, int c, int a
 	amt = arg2;
     } else {
 	callbacks = &command_mod_period_slide_callbacks;
-	amt = arg2 * 4;
+	amt = arg2;
     }
     CHAN.command.cmd = ARM_GetNumForCallbacks(callbacks);
     if (callbacks->init_proc != NULL)

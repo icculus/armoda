@@ -5,7 +5,7 @@
 #include "mixer_software.h"
 #include "osutil.h"
 
-#define FIXED_BITS 16
+#define FIXED_BITS 12
 
 typedef struct SoftMixerPatch {
 
@@ -296,7 +296,13 @@ static int TriggerVoice(Mixer* mixer, int voice)
 
     data->voices[voice].triggered = 1;
     data->voices[voice].pos_fp = 0;
-    data->voices[voice].play_to_fp = data->patches[data->voices[voice].patch].length << FIXED_BITS;
+    if (data->voices[voice].looped) {
+	data->voices[voice].play_to_fp = (data->voices[voice].loop_pos + data->voices[voice].loop_len);
+	UPPER_CLAMP(data->voices[voice].play_to_fp, data->patches[data->voices[voice].patch].length);
+	data->voices[voice].play_to_fp <<= FIXED_BITS;
+    } else {
+	data->voices[voice].play_to_fp = data->patches[data->voices[voice].patch].length << FIXED_BITS;
+    }
 
     return 0;
 }
@@ -312,7 +318,7 @@ static int StopVoice(Mixer* mixer, int voice)
 }
 
 
-static int Render(Mixer* mixer, unsigned int frames, float divisor)
+static int Commit(Mixer* mixer, unsigned int frames, float divisor)
 {
     float* stereo_out;
     unsigned int v;
@@ -408,7 +414,7 @@ Mixer* MXR_InitSoftMixer(float rate, SoftMixerOutputProc output, void* user)
     PRIV(mixer)->user = user;
     PRIV(mixer)->rate = rate;
 
-    mixer->Render = Render;
+    mixer->Commit = Commit;
     mixer->LoadPatch = LoadPatch;
     mixer->UnloadPatch = UnloadPatch;
     mixer->AllocVoice = AllocVoice;
@@ -447,4 +453,3 @@ void MXR_FreeSoftMixer(Mixer* mixer)
     free(mixer->private);
     free(mixer);
 }
-
