@@ -3,7 +3,7 @@ SDL_CONFIG=sdl-config
 SDL_CFLAGS=`$(SDL_CONFIG) --cflags`
 CFLAGS=-W -Wall -ggdb -Wno-unused -DBYTE_ORDER=LITTLE_ENDIAN -O3 -ffast-math
 SDL_LIBS=`$(SDL_CONFIG) --libs`
-LDFLAGS=
+LDFLAGS=-lm
 LIB_OBJS=core.o pattern.o osutil.o commands.o load_mod.o commands_mod.o load_s3m.o commands_s3m.o load_dsm.o mixer_software.o module.o
 PLAYER_OBJS=launcher.o
 MOD2C_OBJS=mod2c.o
@@ -24,7 +24,7 @@ mod2c: $(LIB_OBJS) $(MOD2C_OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o mod2c $(LIB_OBJS) $(MOD2C_OBJS)
 
 mod2c_test: $(LIB_OBJS) mod2c-data $(TEST_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(LIB_OBJS) $(TEST_OBJS) deflorat.mod.o -o mod2c_test
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LIB_OBJS) $(TEST_OBJS) test.mod.o -o mod2c_test
 
 mod2c-data: mod2c
 	./mod2c test deflorat.mod
