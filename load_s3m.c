@@ -6,23 +6,6 @@
 #include "commands_mod.h"
 #include "commands_s3m.h"
 
-/* S3M period table. Borrowed from FireMod. */
-static uint32_t note_to_period[134] = {
-  27392,25856,24384,23040,21696,20480,19328,18240,17216,16256,15360,14496,
-  13696,12928,12192,11520,10848,10240,9664, 9120, 8608, 8128, 7680, 7248,
-  6848, 6464, 6096, 5760, 5424, 5120, 4832, 4560, 4304, 4064, 3840, 3624,
-  3424, 3232, 3048, 2880, 2712, 2560, 2416, 2280, 2152, 2032, 1920, 1812,
-  1712, 1616, 1524, 1440, 1356, 1280, 1208, 1140, 1076, 1016, 960,  906,
-  856,  808,  762,  720,  678,  640,  604,  570,  538,  508,  480,  453,
-  428,  404,  381,  360,  339,  320,  302,  285,  269,  254,  240,  226,
-  214,  202,  190,  180,  170,  160,  151,  143,  135,  127,  120,  113,
-  107,  101,  95,   90,   85,   80,   75,   71,   67,   63,   60,   56,
-  53,   50,   47,   45,   42,   40,   37,   35,   33,   31,   30,   28,
-  26,   25,   23,   22,   21,   20,   18,   17,   16,   15,   15,   14,
-  0,    0
-};
-
-
 
 static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t argy)
 {
@@ -77,7 +60,7 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
     case 'G':
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_slide_to_note_callbacks);
 	note->cmd.arg1 = (int)argz*4;
-	note->cmd.arg2 = note->period;
+	note->cmd.arg2 = note->note;
 	note->trigger = 0;
 	break;
 
@@ -175,8 +158,7 @@ static int InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t ar
 	    note->cmd.arg1 = argy;
 	    break;
 	case 0xD:
-	    printf("DEBUG: delay trigger disabled\n");
-/*	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks); */
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks);
 	    note->cmd.arg1 = argy;
 	    break;
 	case 0xE:
@@ -478,10 +460,11 @@ int ARM_LoadModule_S3M(ARM_Module* mod, const char *filename)
 		    fread(&tmp2, 1, 1, f);
 		    if (tmp2 == 255) {
 		    } else if (tmp2 == 254) {
-			note.period = 0xFFFFFFFF;
+			note.trigger = 0;
+			note.note = 255;
 		    } else {
 			note.trigger = 1;
-			note.period = note_to_period[(tmp2 >> 4) * 12 + (tmp2 & 0x0F)];
+			note.note = (tmp2 & 0x0F) + 12 * ((tmp2 & 0xF0) >> 4);
 		    }
 		    
 		    fread(&tmp2, 1, 1, f);
@@ -522,25 +505,7 @@ int ARM_LoadModule_S3M(ARM_Module* mod, const char *filename)
     if (mod->num_channels > 16)
 	mod->num_channels = 16;
 
-    /* Read the default channel pan info, if present. */
-/*
-    if (!mono && has_default_pan) {
-	for (i = 0; i < 32; i++) {
-	    fread(&tmpu8, 1, 1, f);
-	    tmpu8 &= 0x0F;
-	    tmpu8 *= 16;
-	    printf("Default panning for channel %i is %i\n",
-		   i, tmpu8);
-	    if (mod->default_pan[i] != -1) {
-		mod->default_pan[i] = tmpu8;
-	    }
-	}
-    } else {
-	for (i = 0; i < 32; i++) {
-	    mod->default_pan[i] = 0x7F;
-	}
-    }
-*/
+    mod->period_mode = ARM_PERIOD_LOG;
 
     /* Done! */
 

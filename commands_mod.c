@@ -96,7 +96,7 @@ void command_mod_period_slide_init(struct ARM_Tracker* player, int c, int arg1, 
     else
 	CHAN.periodslide_state.last_valid_delta_arg = arg1;
 
-    CHAN.periodslide_state.delta_per_tick = (float)arg1;
+    CHAN.periodslide_state.delta_per_tick = (float)arg1 / 1712.0;
     CHAN.periodslide_state.limit = 0.0;
 }
 
@@ -142,13 +142,13 @@ void command_mod_slide_to_note_init(struct ARM_Tracker* player, int c, int arg1,
 	arg2 = CHAN.periodslide_state.last_valid_limit_arg;
 
     /* Set the limit. */
-    CHAN.periodslide_state.limit = arg2;
+    CHAN.periodslide_state.limit = ARM_GetLogPeriodForNote(arg2);
     
     /* Set the rate. */
     if (CHAN.periodslide_state.limit < CHAN.period) {
-	CHAN.periodslide_state.delta_per_tick = -arg1;
+	CHAN.periodslide_state.delta_per_tick = -(float)arg1 / 1712.0;
     } else {
-	CHAN.periodslide_state.delta_per_tick = arg1;
+	CHAN.periodslide_state.delta_per_tick = (float)arg1 / 1712.0;
     }
 
     /* Save this command. */
@@ -411,7 +411,7 @@ ARM_CommandType command_mod_set_tempo_callbacks = { command_mod_set_tempo_init, 
 void command_mod_fine_period_slide_init(struct ARM_Tracker* player, int c, int arg1, int arg2)
 {
     CHAN.command_name = (arg1 < 0) ? "fine period down" : "fine period up";
-    CHAN.period += arg1;
+    CHAN.period += (float)arg1 / 1712.0;
 }
 
 ARM_CommandType command_mod_fine_period_slide_callbacks = { command_mod_fine_period_slide_init, NULL, NULL, NULL, 0 };
@@ -494,7 +494,7 @@ void command_mod_retrigger_init(struct ARM_Tracker* player, int c, int arg1, int
 
 void command_mod_retrigger_tick(struct ARM_Tracker* player, int c)
 {
-    if (CHAN.retrig_state.counter >= CHAN.retrig_state.ticks_between) {
+    if (CHAN.retrig_state.counter > CHAN.retrig_state.ticks_between) {
 	CHAN.retrig_state.counter = 0;
 	player->mixer->SetVoicePos(player->mixer, CHAN.voice, 0);
 	switch (CHAN.retrig_state.volume_adjust) {

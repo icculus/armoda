@@ -1,14 +1,14 @@
 CC=gcc
 SDL_CONFIG=sdl-config
 SDL_CFLAGS=`$(SDL_CONFIG) --cflags`
-CFLAGS=-W -Wall -g -Wno-unused -DBYTE_ORDER=BIG_ENDIAN -O3 -ffast-math
+CFLAGS=-W -Wall -g -Wno-unused -DBYTE_ORDER=BIG_ENDIAN
 SDL_LIBS=`$(SDL_CONFIG) --libs`
 LDFLAGS=
 LIB_OBJS=core.o pattern.o osutil.o commands.o load_mod.o commands_mod.o load_s3m.o commands_s3m.o load_dsm.o mixer_software.o module.o
 PLAYER_OBJS=launcher.o
 MOD2C_OBJS=mod2c.o
 TEST_OBJS=mod2c_test.o
-INSTALL_PATH=/usr/local/bin
+INSTALL_PATH=/usr/bin
 
 .PHONY: all clean mod2c-data
 

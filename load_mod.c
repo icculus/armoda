@@ -56,7 +56,7 @@ int ARM_MOD_InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t a
     case 3:
 	note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_slide_to_note_callbacks);
 	note->cmd.arg1 = ((int)argx*16+argy)*4;
-	note->cmd.arg2 = (int)note->period;
+	note->cmd.arg2 = note->note;
 	note->trigger = 0;
 	break;
     case 4:
@@ -160,9 +160,8 @@ int ARM_MOD_InstallCommand(ARM_Note* note, uint8_t code, uint8_t argx, uint8_t a
 	    note->cmd.arg1 = argy;
 	    break;
 	case 13:
-//	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks);
-//	    note->cmd.arg1 = argy;
-//	    printf("FIXME! Delay trigger command ignored due to lack of sleep during implementation.\n");
+	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_trigger_callbacks);
+	    note->cmd.arg1 = argy;
 	    break;
 	case 14:
 	    note->cmd.cmd = ARM_GetNumForCallbacks(&command_mod_delay_pattern_callbacks);
@@ -270,7 +269,8 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
 	mod->num_channels = 6;
     } else if (!strcmp(sig, "8CHN")) {
 	/* We don't support the FLT8 format (StarTrekker). It achieves 8 channels
-	   by pairing patterns side by side. */
+	   by pairing patterns side by side. I've never actually run into one of
+	   these files, though... */
 	mod->num_channels = 8;
     } else {
 	printf("Unknown MOD format. Signature was '%s'.", sig);
@@ -305,6 +305,7 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
 		ARM_Note* note;
 		int command;
 		int sample_num;
+		unsigned int period;
 
 		note = ARM_GetPatternNote(&mod->patterns[i], d, c);
 		assert(note != NULL);
@@ -313,12 +314,15 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
 		sample_num = (raw_note[0] & 0xF0) + ((raw_note[2] >> 4) & 0x0F);
 		CLAMP(sample_num, 0, mod->num_samples);
 		note->sample = sample_num - 1;
-		note->period = raw_note[1] + ((raw_note[0] & 0x0F) * 256);
-		note->period *= 4;
-		if (note->period != 0)
+		period = ((raw_note[1] + ((raw_note[0] & 0x0F) * 256)) * 4);
+		if (period != 0)
 		    note->trigger = 1;
 		else
 		    note->trigger = 0;
+		if (period == 0)
+		    note->note = 0;
+		else
+		    note->note = ARM_FindNoteForLogPeriod(period / 1712.0);
 		raw_cmd = raw_note[3] + (raw_note[2] & 0x0F) * 256;
 
 		/* MOD's don't have a volume column. */
@@ -351,6 +355,8 @@ int ARM_LoadModule_MOD(ARM_Module* mod, const char *filename)
 	
 	free(sam);
     }
+
+    mod->period_mode = ARM_PERIOD_LOG;
 
     fclose(f);
 

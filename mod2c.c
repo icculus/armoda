@@ -35,10 +35,10 @@ static void FreezeCommand(FILE* out_c, ARM_Command* cmd)
 
 static void FreezeNote(FILE* out_c, ARM_Note* note)
 {
-    fprintf(out_c, "{ %i, %f, %f, %i, ",
+    fprintf(out_c, "{ %i, %f, %i, %i, ",
             note->sample,
             note->volume,
-            note->period,
+            note->note,
             note->trigger);
     FreezeCommand(out_c, &note->cmd);
     fprintf(out_c, " }");
