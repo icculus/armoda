@@ -1,0 +1,4 @@
+This software was written by John R. Hall <overcode@overcode.net>,
+but it is in the public domain. I believe that free software
+should be truly free and not encumbered by license hassles.
+There is no warranty of any sort pertaining to this code.
